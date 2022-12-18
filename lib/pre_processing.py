@@ -23,7 +23,7 @@ class DataLoader():
         for user in self.users:
             user_table = pd.concat([user_table, user.star_table])
 
-        user_table = user_table.sort_values(["day", "part", "get_star_ts"])
+        user_table = user_table.sort_values(["get_star_ts"])
         user_table["cumulative_stars"] = user_table.groupby(["id"])["get_star_ts"].rank(method="first").astype(int)
         user_table["local_score"] = self.n_users + 1 - user_table.groupby(["day", "part"])["get_star_ts"].rank(method="first").astype(int)
         user_table["cumulative_local_score"] = user_table.groupby(["id"])["local_score"].cumsum()
@@ -38,13 +38,14 @@ class DataLoader():
         current_user_table["rank_stars"] = current_user_table["cumulative_stars"].rank(method="min", ascending=False).astype(int)
         current_user_table["rank_local_score"] = current_user_table["cumulative_local_score"].rank(method="min", ascending=False).astype(int)
 
-        return current_user_table
+        return current_user_table.reset_index()
 
 
     def get_top_n_users(self, n, score_type = "local_score", label = "name"):
         assert score_type in ["local_score", "stars"], "Invalid choice of score to order by"
         assert label in ["name", "id"], "Invalid choice of display name"
-        return self.current_user_table[self.data.current_user_table[f"rank_{score_type}"] <= n][label].tolist()[::-1]
+
+        return self.current_user_table[self.current_user_table[f"rank_{score_type}"] <= n][label].tolist()[::-1]
 
 
     def __repr__(self) -> str:
@@ -74,5 +75,5 @@ class User():
         return f"Name: {self.name} | ID: {self.id} | Stars: {self.stars} | Local score: {self.local_score}"
 
 if __name__ == "__main__":
-    loader = DataLoader(file_name="./data/2022.json")
+    loader = DataLoader(file_name="./data/2022_103987.json")
     print(loader.user_table)
